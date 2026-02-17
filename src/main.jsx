@@ -11,7 +11,6 @@ import {
   Outlet,
 } from 'react-router-dom'
 
-import { SessionContextProvider } from '@supabase/auth-helpers-react'
 import { supabase } from './supabaseClient'
 
 import Dashboard from './pages/Dashboard'
@@ -75,33 +74,38 @@ function Layout() {
     ? `${brand.appName} v${String(brand.appVersion || '').replace(/^v/, '')}`
     : '45AntsApp v1.0'
 
+  const adminPaths = ['/login', '/dashboard', '/editor', '/analytics', '/system-check', '/settings']
+  const isAdmin = adminPaths.some((p) => location.pathname === p || location.pathname.startsWith(p + '/'))
+
   return (
     <>
-      <div style={{
-        display: 'flex',
-        gap: 10,
-        alignItems: 'center',
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-      }}>
-        <div style={{ fontWeight: 800 }}>{title}</div>
-        <div style={{ flex: 1 }} />
-        <Link className='tab' to='/'>Public</Link>
-        <Link className='tab' to='/dashboard'>Dashboard</Link>
-        <Link className='tab' to='/analytics'>Analytics</Link>
-        <Link className='tab' to='/system-check'>System-Check</Link>
-        <Link className='tab' to='/settings'>Settings</Link>
-        {session ? (
-          <button className='tab' onClick={onLogout}>Logout</button>
-        ) : (
-          <Link className='tab' to='/login'>Login</Link>
-        )}
-      </div>
-      <div className='container'>
+      {isAdmin ? (
+        <div style={{
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center',
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--bg)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+        }}>
+          <div style={{ fontWeight: 800 }}>{title}</div>
+          <div style={{ flex: 1 }} />
+          <Link className='tab' to='/dashboard'>Dashboard</Link>
+          <Link className='tab' to='/analytics'>Analytics</Link>
+          <Link className='tab' to='/system-check'>System-Check</Link>
+          <Link className='tab' to='/settings'>Settings</Link>
+          {session ? (
+            <button className='tab' onClick={onLogout}>Logout</button>
+          ) : (
+            <Link className='tab' to='/login'>Login</Link>
+          )}
+        </div>
+      ) : null}
+
+      <div className={isAdmin ? 'container' : ''}>
         <Outlet />
       </div>
     </>
@@ -128,10 +132,8 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <SessionContextProvider supabaseClient={supabase}>
-      <BrandingBootstrap>
-        <RouterProvider router={router} />
-      </BrandingBootstrap>
-    </SessionContextProvider>
+    <BrandingBootstrap>
+      <RouterProvider router={router} />
+    </BrandingBootstrap>
   </React.StrictMode>
 )
