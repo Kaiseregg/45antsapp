@@ -20,11 +20,30 @@ export default function PublicPage(){
   const { id } = useParams()
   const [page,setPage]=useState(null)
   const [comps,setComps]=useState([])
-  useEffect(()=>{ (async()=>{ const { data } = await supabase.from('landingpages_45ants').select('*').eq('id', id).maybeSingle(); setPage(data); setComps(data?.components||[]); logEvent({ page_id:id, event_type:'scan' }) })() },[id])
+  const [loadError,setLoadError]=useState('')
+  useEffect(()=>{ (async()=>{
+    setLoadError('')
+    const { data, error } = await supabase.from('landingpages_45ants').select('*').eq('id', id).maybeSingle()
+    if(error){
+      console.error(error)
+      setLoadError('Seite konnte nicht geladen werden (Supabase/RLS).')
+    }
+    setPage(data)
+    setComps(data?.components||[])
+    logEvent({ page_id:id, event_type:'scan' })
+  })() },[id])
   function clickLog(url){ logEvent({ page_id:id, event_type:'click', target:url }) }
   return (
     <div className='grid' style={{gap:12}}>
       <h1>{page?.title||'Landing Page'}</h1>
+      {!page && loadError && (
+        <div className='card' style={{padding:16}}>
+          <b>{loadError}</b>
+          <div style={{marginTop:6,fontSize:13,opacity:0.9}}>
+            Tipp: In Supabase muss es eine SELECT‑Policy für die Tabelle <code>landingpages_45ants</code> geben, damit die Seite ohne Login (z.B. iPhone) sichtbar ist.
+          </div>
+        </div>
+      )}
       {comps.map((c,i)=> (
         <div key={i} className='card'>
           {c.type==='heading' && <h2>{c.data?.title}</h2>}
@@ -49,7 +68,27 @@ export default function PublicPage(){
           {c.type==='links' && ( ()=>{ const items=(c.data?.items||'').split(',').map(s=>s.trim()).filter(Boolean).map(x=>{ const p=x.split('|'); return { label:p[0]||p[1], url:p[1]||p[0] } }); return <div className='grid'>{items.map((it,ix)=>(<a key={ix} className='button' href={it.url} target='_blank' onClick={()=>clickLog(it.url)}>{it.label}</a>))}</div> })()}
           {c.type==='button' && c.data?.url && <a className='button' href={c.data.url} target='_blank' onClick={()=>clickLog(c.data.url)}>{c.data.label||'Öffnen'}</a>}
           {c.type==='video' && <YouTube url={c.data?.url} />}
-          {c.type==='pdfgallery' && ( ()=>{ const arr=(c.data?.urls||'').split(',').map(s=>s.trim()).filter(Boolean); return <div className='grid grid-2'>{arr.map((u,ix)=>(<a key={ix} className='button' href={u} target='_blank' onClick={()=>clickLog(u)}>PDF {ix+1}</a>))}</div> })()}
+          {c.type==='pdfgallery' && ( ()=>{
+            const urls=(c.data?.urls||'').split(',').map(s=>s.trim()).filter(Boolean)
+            const titles=(c.data?.titles||'').split(',').map(s=>s.trim())
+            const subtitles=(c.data?.subtitles||'').split(',').map(s=>s.trim())
+            return (
+              <div className='grid'>
+                {urls.map((u,ix)=>{
+                  const t=titles[ix]||`PDF ${ix+1}`
+                  const st=subtitles[ix]||''
+                  return (
+                    <a key={ix} className='button' href={u} target='_blank' onClick={()=>clickLog(u)}>
+                      <div style={{display:'grid',gap:2,textAlign:'left'}}>
+                        <div style={{fontWeight:800}}>{t}</div>
+                        {st ? <div style={{fontSize:12,opacity:0.85}}>{st}</div> : null}
+                      </div>
+                    </a>
+                  )
+                })}
+              </div>
+            )
+          })()}
           {['details','hours','team','testimonial','products'].includes(c.type) && <pre style={{whiteSpace:'pre-wrap'}}>{c.data?.text||''}</pre>}
         </div>
       ))}

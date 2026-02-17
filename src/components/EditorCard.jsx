@@ -66,6 +66,8 @@ export default function EditorCard({ component, onChange, onMoveUp, onMoveDown, 
         {type==='pdfgallery' && (
           <div className='grid' style={{gap:10}}>
             {tf('PDF-URLs (Komma)','urls')}
+            {tf('PDF-Titel (Komma, optional)','titles')}
+            {tf('PDF-Untertitel (Komma, optional)','subtitles')}
             <UploadZone accept='application/pdf' onUrl={url=>appendUrl('urls', url)} />
             <div style={{color:'#334155',fontSize:12}}>Tipp: PDFs werden in deinen Supabase‑Bucket hochgeladen und hier automatisch ergänzt.</div>
           </div>
