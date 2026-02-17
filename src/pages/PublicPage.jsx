@@ -29,7 +29,20 @@ export default function PublicPage(){
         <div key={i} className='card'>
           {c.type==='heading' && <h2>{c.data?.title}</h2>}
           {c.type==='text' && <p>{c.data?.text}</p>}
-          {c.type==='image' && c.data?.url && <img src={c.data.url} alt='' style={{maxWidth:'100%'}}/>}
+          {c.type==='image' && c.data?.url && (()=>{
+            const widthPct = Math.min(100, Math.max(10, Number(c.data?.widthPct ?? 100)))
+            const align = c.data?.align || 'center'
+            const textAlign = align==='left' ? 'left' : align==='right' ? 'right' : 'center'
+            return (
+              <div style={{textAlign}}>
+                <img
+                  src={c.data.url}
+                  alt=''
+                  style={{width:`${widthPct}%`, maxWidth:'100%', height:'auto', display:'inline-block'}}
+                />
+              </div>
+            )
+          })()}
           {c.type==='images' && (
             <div className='grid grid-2'>{(c.data?.urls||'').split(',').map((u,ix)=>(<img key={ix} src={u.trim()} alt='' style={{width:'100%'}}/>))}</div>
           )}

@@ -70,9 +70,9 @@ function Layout() {
   }
 
   const brand = window.__BRANDING__
-  const title = brand?.appName
-    ? `${brand.appName} v${String(brand.appVersion || '').replace(/^v/, '')}`
-    : '45AntsApp v1.0'
+  const appName = brand?.appName || '45AntsApp'
+  // Version ist absichtlich fix, damit es nie durch alte DB-Werte überschrieben wird.
+  const title = `${appName} v1.0`
 
   const adminPaths = ['/login', '/dashboard', '/editor', '/analytics', '/system-check', '/settings']
   const isAdmin = adminPaths.some((p) => location.pathname === p || location.pathname.startsWith(p + '/'))

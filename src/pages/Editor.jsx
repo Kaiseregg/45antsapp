@@ -36,6 +36,10 @@ export default function Editor(){
   function updateComponent(cid, data){
     setComponents(prev=>prev.map(c=>c.id===cid? {...c, data}: c))
   }
+
+  function deleteComponent(cid){
+    setComponents(prev=>prev.filter(c=>c.id!==cid))
+  }
   function move(idx, dir){
     setComponents(prev=>{
       const next=[...prev]
@@ -94,6 +98,7 @@ export default function Editor(){
                     onChange={(data)=>updateComponent(c.id,data)}
                     onMoveUp={()=>move(idx,-1)}
                     onMoveDown={()=>move(idx, 1)}
+                    onDelete={()=>deleteComponent(c.id)}
                   />
                 ))}
               </div>

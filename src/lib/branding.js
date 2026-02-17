@@ -36,7 +36,8 @@ export async function setBranding({ appName, faviconUrl }) {
 }
 
 export function applyBrandingToDocument({ appName, appVersion, faviconUrl }) {
-  document.title = `${appName} v${String(appVersion).replace(/^v/, '')}`
+  // Version ist absichtlich fix (v1.0), damit sie nie durch alte Werte überschrieben wird.
+  document.title = `${appName} v1.0`
 
   if (faviconUrl) {
     let link = document.querySelector('link[rel="icon"]')
