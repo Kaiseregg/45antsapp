@@ -57,3 +57,45 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,syste
 .chimp-section{margin-top:14px}
 .chimp-table-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .chimp-search{min-width:260px;max-width:420px;width:100%}
+
+/* Theme separation (admin vs public)
+   We switch by setting body.className = theme-admin / theme-public based on route.
+   This avoids "white on white" when the public landing theme bleeds into the editor.
+*/
+body.theme-admin {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #475569;
+  --primary: #2563eb;
+  --primary-contrast: #ffffff;
+}
+
+body.theme-public {
+  /* keep a neutral readable default; individual landingpages can still style their content */
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #475569;
+  --primary: #2563eb;
+  --primary-contrast: #ffffff;
+}
+
+/* make sure text always inherits the theme variables */
+body { color: var(--text); }
+
+.tab{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  text-decoration:none;
+  cursor:pointer;
+}
+.tab:hover{ border-color:#cbd5e1 }

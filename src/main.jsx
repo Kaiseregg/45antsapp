@@ -1,76 +1,137 @@
-
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './styles.css'
-import Login from './pages/Login.jsx'
-import Dashboard from './pages/Dashboard.jsx'
-import Editor from './pages/Editor.jsx'
-import PublicPage from './pages/PublicPage.jsx'
-import Analytics from './pages/Analytics.jsx'
-import SystemCheck from './pages/SystemCheck.jsx'
-import { APP_VERSION, supabase } from './supabaseClient.js'
 
-const RequireAuth = ({ children }) => {
-  const [loading,setLoading]=useState(true)
-  const [session,setSession]=useState(null)
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+  useLocation,
+  Link,
+  Outlet,
+} from 'react-router-dom'
 
-  useEffect(()=>{
-    let sub
-    supabase.auth.getSession().then(({data})=>{
-      setSession(data?.session||null)
-      setLoading(false)
-    })
-    sub = supabase.auth.onAuthStateChange((_evt, sess)=>{
-      setSession(sess)
-    })
-    return ()=>{ sub?.data?.subscription?.unsubscribe?.() }
-  },[])
+import { SessionContextProvider } from '@supabase/auth-helpers-react'
+import { supabase } from './supabaseClient'
 
-  if(loading) return <div className='card' style={{maxWidth:560, margin:'40px auto'}}>Lade…</div>
-  return session ? children : <Navigate to='/login' replace />
+import Dashboard from './pages/Dashboard'
+import Editor from './pages/Editor'
+import PublicPage from './pages/PublicPage'
+import PublicHome from './pages/PublicHome'
+import Login from './pages/Login'
+import Analytics from './pages/Analytics'
+import SystemCheck from './pages/SystemCheck'
+import Settings from './pages/Settings'
+import BrandingBootstrap from './components/BrandingBootstrap'
+
+// --- Auth guard ---
+function RequireAuth({ children }) {
+  const location = useLocation()
+  if (!window.__SESSION_READY__) return <div className='card' style={{maxWidth:720, margin:'40px auto'}}>Lade…</div>
+  const session = window.__SUPA_SESSION__
+  if (!session) return <Navigate to='/login' replace state={{ from: location }} />
+  return children
 }
 
-function Nav(){
-  const [session,setSession]=useState(null)
-  useEffect(()=>{
-    supabase.auth.getSession().then(({data})=>setSession(data?.session||null))
-    const sub = supabase.auth.onAuthStateChange((_evt, sess)=>setSession(sess))
-    return ()=>sub?.data?.subscription?.unsubscribe?.()
-  },[])
+function Layout() {
+  const location = useLocation()
+  const [session, setSession] = React.useState(null)
 
-  async function logout(){
+  React.useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      const { data } = await supabase.auth.getSession()
+      if (!mounted) return
+      setSession(data.session)
+      window.__SUPA_SESSION__ = data.session
+      window.__SESSION_READY__ = true
+    })()
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s)
+      window.__SUPA_SESSION__ = s
+      window.__SESSION_READY__ = true
+    })
+
+    return () => {
+      mounted = false
+      sub?.subscription?.unsubscribe?.()
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const adminPaths = ['/login', '/dashboard', '/editor', '/analytics', '/system-check', '/settings']
+    const isAdmin = adminPaths.some((p) => location.pathname === p || location.pathname.startsWith(p + '/'))
+    document.body.classList.remove('theme-admin', 'theme-public')
+    document.body.classList.add(isAdmin ? 'theme-admin' : 'theme-public')
+  }, [location.pathname])
+
+  async function onLogout() {
     await supabase.auth.signOut()
-    window.location.href='/login'
   }
 
+  const brand = window.__BRANDING__
+  const title = brand?.appName
+    ? `${brand.appName} v${String(brand.appVersion || '').replace(/^v/, '')}`
+    : '45AntsApp v1.0'
+
   return (
-    <div className='nav'>
-      <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-        <a className='button' href='/dashboard'>Dashboard</a>
-        <a className='button' href='/analytics'>Analytics</a>
-        <a className='button' href='/system-check'>System‑Check</a>
-        {session && <button className='button' onClick={logout} style={{background:'#222'}}>Logout</button>}
+    <>
+      <div style={{
+        display: 'flex',
+        gap: 10,
+        alignItems: 'center',
+        padding: '12px 16px',
+        borderBottom: '1px solid var(--border)',
+        background: 'var(--bg)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+      }}>
+        <div style={{ fontWeight: 800 }}>{title}</div>
+        <div style={{ flex: 1 }} />
+        <Link className='tab' to='/'>Public</Link>
+        <Link className='tab' to='/dashboard'>Dashboard</Link>
+        <Link className='tab' to='/analytics'>Analytics</Link>
+        <Link className='tab' to='/system-check'>System-Check</Link>
+        <Link className='tab' to='/settings'>Settings</Link>
+        {session ? (
+          <button className='tab' onClick={onLogout}>Logout</button>
+        ) : (
+          <Link className='tab' to='/login'>Login</Link>
+        )}
       </div>
-      <div className='muted' style={{fontSize:12}}>v{APP_VERSION}</div>
-    </div>
+      <div className='container'>
+        <Outlet />
+      </div>
+    </>
   )
 }
 
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      { index: true, element: <PublicHome /> },
+      { path: 'p/:id', element: <PublicPage /> },
+      { path: 'login', element: <Login /> },
+      { path: 'dashboard', element: <RequireAuth><Dashboard /></RequireAuth> },
+      { path: 'editor/:id', element: <RequireAuth><Editor /></RequireAuth> },
+      { path: 'analytics', element: <RequireAuth><Analytics /></RequireAuth> },
+      { path: 'system-check', element: <RequireAuth><SystemCheck /></RequireAuth> },
+      { path: 'settings', element: <RequireAuth><Settings /></RequireAuth> },
+      { path: '*', element: <Navigate to='/' replace /> },
+    ],
+  },
+])
+
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-    <div className='app'>
-      <Nav/>
-      <Routes>
-        <Route path='/' element={<Navigate to='/login'/>} />
-        <Route path='/login' element={<Login/>} />
-        <Route path='/dashboard' element={<RequireAuth><Dashboard/></RequireAuth>} />
-        <Route path='/editor' element={<RequireAuth><Navigate to='/dashboard' replace/></RequireAuth>} />
-        <Route path='/editor/:id' element={<RequireAuth><Editor/></RequireAuth>} />
-        <Route path='/p/:id' element={<PublicPage/>} />
-        <Route path='/analytics' element={<RequireAuth><Analytics/></RequireAuth>} />
-        <Route path='/system-check' element={<SystemCheck/>} />
-      </Routes>
-    </div>
-  </BrowserRouter>
+  <React.StrictMode>
+    <SessionContextProvider supabaseClient={supabase}>
+      <BrandingBootstrap>
+        <RouterProvider router={router} />
+      </BrandingBootstrap>
+    </SessionContextProvider>
+  </React.StrictMode>
 )

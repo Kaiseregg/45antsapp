@@ -1,6 +1,6 @@
 {
-  "name": "45ants-v7-3-full",
-  "version": "7.3.0",
+  "name": "45antsapp",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
