@@ -13,4 +13,4 @@ if (!SUPABASE_ANON_KEY) throw new Error('supabaseAnonKey is required.')
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 export const BUCKET = R.VITE_BUCKET || V.VITE_BUCKET || '45ants_documents'
-export const APP_VERSION = R.VITE_APP_VERSION || V.VITE_APP_VERSION || '7.4.0'
+export const APP_VERSION = R.VITE_APP_VERSION || V.VITE_APP_VERSION || 'dev'
