@@ -4,7 +4,6 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './styles.css'
 import Login from './pages/Login.jsx'
-import ResetPassword from './pages/ResetPassword.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Editor from './pages/Editor.jsx'
 import PublicPage from './pages/PublicPage.jsx'
@@ -65,9 +64,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path='/' element={<Navigate to='/login'/>} />
         <Route path='/login' element={<Login/>} />
-        <Route path='/reset-password' element={<ResetPassword/>} />
         <Route path='/dashboard' element={<RequireAuth><Dashboard/></RequireAuth>} />
-        <Route path='/editor' element={<RequireAuth><Editor/></RequireAuth>} />
+        <Route path='/editor' element={<RequireAuth><Navigate to='/dashboard' replace/></RequireAuth>} />
+        <Route path='/editor/:id' element={<RequireAuth><Editor/></RequireAuth>} />
         <Route path='/p/:id' element={<PublicPage/>} />
         <Route path='/analytics' element={<RequireAuth><Analytics/></RequireAuth>} />
         <Route path='/system-check' element={<SystemCheck/>} />
