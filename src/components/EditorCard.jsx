@@ -60,9 +60,48 @@ export default function EditorCard({ component, onChange, onMoveUp, onMoveDown, 
           </div>
         )}
         {type==='images' && tf('Bild-URLs (Komma getrennt)','urls')}
-        {type==='links' && tf('Links (Text|URL, Komma)','items')}
+        {type==='links' && tf('Links (Text|URL, Komma)','links')}
         {type==='button' && (<><label>Label<input className='input' value={data.label||''} onChange={e=>onChange({...data,label:e.target.value})} /></label>{tf('URL','url')}</>)}
-        {type==='video' && tf('YouTube URL','url')}
+        {type==='video' && (
+          <div className='grid' style={{gap:10}}>
+            {tf('YouTube / Video URL (Embed)','url')}
+            <div className='grid' style={{gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+              <label style={{display:'grid',gap:6}}>
+                <span style={{color:'#334155',fontWeight:600}}>Breite (%)</span>
+                <input
+                  className='input'
+                  type='number'
+                  min='30'
+                  max='100'
+                  value={data.widthPct ?? 100}
+                  onChange={e=>onChange({ ...data, widthPct: Number(e.target.value||100) })}
+                />
+              </label>
+              <label style={{display:'grid',gap:6}}>
+                <span style={{color:'#334155',fontWeight:600}}>Ausrichtung</span>
+                <select className='input' value={data.align || 'center'} onChange={e=>onChange({ ...data, align: e.target.value })}>
+                  <option value='left'>Links</option>
+                  <option value='center'>Zentriert</option>
+                  <option value='right'>Rechts</option>
+                </select>
+              </label>
+              <label style={{display:'grid',gap:6}}>
+                <span style={{color:'#334155',fontWeight:600}}>Max-Höhe (px)</span>
+                <input
+                  className='input'
+                  type='number'
+                  min='200'
+                  max='1200'
+                  value={data.height ?? 420}
+                  onChange={e=>onChange({ ...data, height: Number(e.target.value||420) })}
+                />
+              </label>
+            </div>
+            <div style={{color:'#334155',fontSize:12}}>
+              Hinweis: Für YouTube am besten den <b>Embed-Link</b> benutzen (…/embed/VIDEO_ID). Normale watch-Links werden je nach Browser blockiert.
+            </div>
+          </div>
+        )}
         {type==='pdfgallery' && (
           <div className='grid' style={{gap:10}}>
             {tf('PDF-URLs (Komma)','urls')}

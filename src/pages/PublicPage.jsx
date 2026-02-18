@@ -1,97 +1,177 @@
-
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import { logEvent } from '../lib/analytics'
 
-function YouTube({ url }){
-  if(!url) return null
-  let id=null
-  try{
-    const u=new URL(url)
-    if(u.hostname.includes('youtu.be')) id=u.pathname.slice(1)
-    else if(u.searchParams.get('v')) id=u.searchParams.get('v')
-  }catch(e){}
-  if(!id) return null
-  return <div style={{position:'relative',paddingTop:'56.25%'}}><iframe src={`https://www.youtube.com/embed/${id}`} title='YouTube' allow='accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture' allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:0}}/></div>
+function getTheme(components){
+  const t = (components||[]).find(c=>c?.type==='theme')?.data || {}
+  return {
+    bg: t.bg ?? '#f5f7fb',
+    maxWidth: t.maxWidth ?? 980,
+    cardBg: t.cardBg ?? '#ffffff',
+    cardBorder: t.cardBorder ?? '#e6eaf2',
+    titleHidden: !!t.titleHidden,
+  }
 }
 
 export default function PublicPage(){
   const { id } = useParams()
+  const [sp] = useSearchParams()
   const [page,setPage]=useState(null)
-  const [comps,setComps]=useState([])
-  const [loadError,setLoadError]=useState('')
-  useEffect(()=>{ (async()=>{
-    setLoadError('')
-    const { data, error } = await supabase.from('landingpages_45ants').select('*').eq('id', id).maybeSingle()
-    if(error){
-      console.error(error)
-      setLoadError('Seite konnte nicht geladen werden (Supabase/RLS).')
+  const [loading,setLoading]=useState(true)
+
+  useEffect(()=>{
+    let alive=true
+    ;(async()=>{
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('landingpages_45ants')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if(!alive) return
+      if(error){ setPage(null); setLoading(false); return }
+      setPage(data)
+      setLoading(false)
+    })()
+    return ()=>{ alive=false }
+  },[id])
+
+  const components = page?.components || []
+  const theme = useMemo(()=>getTheme(components), [components])
+
+  useEffect(()=>{
+    const t = page?.name || '45Ants'
+    document.title = t
+  },[page?.name])
+
+  const render = (c, idx)=>{
+    if(!c) return null
+    if(c.type==='theme') return null
+
+    if(c.type==='heading'){
+      const title = c.data?.title || ''
+      const subtitle = c.data?.subtitle || ''
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          {!theme.titleHidden && title && <h2 className="h2">{title}</h2>}
+          {subtitle && <div className="muted">{subtitle}</div>}
+        </div>
+      )
     }
-    setPage(data)
-    setComps(data?.components||[])
-    logEvent({ page_id:id, event_type:'scan' })
-  })() },[id])
-  function clickLog(url){ logEvent({ page_id:id, event_type:'click', target:url }) }
-  return (
-    <div className='grid' style={{gap:12}}>
-      <h1>{page?.title||'Landing Page'}</h1>
-      {!page && loadError && (
-        <div className='card' style={{padding:16}}>
-          <b>{loadError}</b>
-          <div style={{marginTop:6,fontSize:13,opacity:0.9}}>
-            Tipp: In Supabase muss es eine SELECT‑Policy für die Tabelle <code>landingpages_45ants</code> geben, damit die Seite ohne Login (z.B. iPhone) sichtbar ist.
+
+    if(c.type==='text'){
+      const text = c.data?.text || ''
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          <div style={{whiteSpace:'pre-wrap'}}>{text}</div>
+        </div>
+      )
+    }
+
+    if(c.type==='pdfgallery'){
+      const urls = (c.data?.urls||'').split(',').map(s=>s.trim()).filter(Boolean)
+      const titles = (c.data?.titles||'').split(',').map(s=>s.trim())
+      const subs = (c.data?.subtitles||'').split(',').map(s=>s.trim())
+      if(urls.length===0) return null
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          <div className="stack">
+            {urls.map((u,i)=>(
+              <a className="btn" key={u+i} href={u} target="_blank" rel="noreferrer">
+                <div style={{display:'flex',flexDirection:'column',gap:2,alignItems:'flex-start'}}>
+                  <div>{titles[i] || `PDF ${i+1}`}</div>
+                  {subs[i] ? <div style={{fontSize:12,opacity:.85}}>{subs[i]}</div> : null}
+                </div>
+              </a>
+            ))}
           </div>
         </div>
-      )}
-      {comps.map((c,i)=> (
-        <div key={i} className='card'>
-          {c.type==='heading' && <h2>{c.data?.title}</h2>}
-          {c.type==='text' && <p>{c.data?.text}</p>}
-          {c.type==='image' && c.data?.url && (()=>{
-            const widthPct = Math.min(100, Math.max(10, Number(c.data?.widthPct ?? 100)))
-            const align = c.data?.align || 'center'
-            const textAlign = align==='left' ? 'left' : align==='right' ? 'right' : 'center'
-            return (
-              <div style={{textAlign}}>
-                <img
-                  src={c.data.url}
-                  alt=''
-                  style={{width:`${widthPct}%`, maxWidth:'100%', height:'auto', display:'inline-block'}}
+      )
+    }
+
+    if(c.type==='image'){
+      const url = c.data?.url || ''
+      if(!url) return null
+      const widthPct = Number(c.data?.widthPct ?? 100)
+      const align = c.data?.align || 'center'
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          <div style={{display:'flex',justifyContent: align==='left'?'flex-start':align==='right'?'flex-end':'center'}}>
+            <img
+              src={url}
+              alt=""
+              style={{width: `${Math.max(10, Math.min(100, widthPct))}%`, height:'auto', display:'block'}}
+            />
+          </div>
+        </div>
+      )
+    }
+
+    if(c.type==='video'){
+      const url = c.data?.url || ''
+      if(!url) return null
+      const widthPct = Number(c.data?.widthPct ?? 100)
+      const align = c.data?.align || 'center'
+      const height = Number(c.data?.height ?? 420)
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          <div style={{display:'flex',justifyContent: align==='left'?'flex-start':align==='right'?'flex-end':'center'}}>
+            <div style={{width:`${Math.max(30, Math.min(100, widthPct))}%`}}>
+              <div style={{position:'relative', paddingTop:'56.25%'}}>
+                <iframe
+                  src={url}
+                  title="video"
+                  style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', border:0, borderRadius:12, maxHeight: height}}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
                 />
               </div>
-            )
-          })()}
-          {c.type==='images' && (
-            <div className='grid grid-2'>{(c.data?.urls||'').split(',').map((u,ix)=>(<img key={ix} src={u.trim()} alt='' style={{width:'100%'}}/>))}</div>
-          )}
-          {c.type==='links' && ( ()=>{ const items=(c.data?.items||'').split(',').map(s=>s.trim()).filter(Boolean).map(x=>{ const p=x.split('|'); return { label:p[0]||p[1], url:p[1]||p[0] } }); return <div className='grid'>{items.map((it,ix)=>(<a key={ix} className='button' href={it.url} target='_blank' onClick={()=>clickLog(it.url)}>{it.label}</a>))}</div> })()}
-          {c.type==='button' && c.data?.url && <a className='button' href={c.data.url} target='_blank' onClick={()=>clickLog(c.data.url)}>{c.data.label||'Öffnen'}</a>}
-          {c.type==='video' && <YouTube url={c.data?.url} />}
-          {c.type==='pdfgallery' && ( ()=>{
-            const urls=(c.data?.urls||'').split(',').map(s=>s.trim()).filter(Boolean)
-            const titles=(c.data?.titles||'').split(',').map(s=>s.trim())
-            const subtitles=(c.data?.subtitles||'').split(',').map(s=>s.trim())
-            return (
-              <div className='grid'>
-                {urls.map((u,ix)=>{
-                  const t=titles[ix]||`PDF ${ix+1}`
-                  const st=subtitles[ix]||''
-                  return (
-                    <a key={ix} className='button' href={u} target='_blank' onClick={()=>clickLog(u)}>
-                      <div style={{display:'grid',gap:2,textAlign:'left'}}>
-                        <div style={{fontWeight:800}}>{t}</div>
-                        {st ? <div style={{fontSize:12,opacity:0.85}}>{st}</div> : null}
-                      </div>
-                    </a>
-                  )
-                })}
-              </div>
-            )
-          })()}
-          {['details','hours','team','testimonial','products'].includes(c.type) && <pre style={{whiteSpace:'pre-wrap'}}>{c.data?.text||''}</pre>}
+            </div>
+          </div>
         </div>
-      ))}
+      )
+    }
+
+    if(c.type==='links'){
+      const raw = c.data?.links || ''
+      const items = raw.split(',').map(s=>s.trim()).filter(Boolean).map(x=>{
+        const parts=x.split('|')
+        return { label: (parts[0]||'Link').trim(), url:(parts[1]||parts[0]||'').trim() }
+      })
+      if(items.length===0) return null
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          <div className="stack">
+            {items.map((it,i)=>(
+              <a key={i} className="btn" href={it.url} target="_blank" rel="noreferrer">{it.label}</a>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    // fallback
+    return null
+  }
+
+  if(loading){
+    return <div className="publicWrap" style={{background:theme.bg}}><div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}><div className="muted">Lädt…</div></div></div>
+  }
+
+  if(!page){
+    return <div className="publicWrap" style={{background:theme.bg}}><div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}><div className="muted">Nicht gefunden.</div></div></div>
+  }
+
+  // If someone appends ?admin=1 we still never show admin UI on public pages
+  void sp
+
+  return (
+    <div className="publicWrap" style={{background:theme.bg}}>
+      <div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}>
+        <div className="grid">
+          {components.map(render)}
+        </div>
+      </div>
     </div>
   )
 }

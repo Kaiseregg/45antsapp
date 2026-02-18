@@ -16,6 +16,7 @@ export default function Editor(){
   const [saving,setSaving]=useState(false)
   const [loading,setLoading]=useState(true)
   const [err,setErr]=useState('')
+  const [previewTick,setPreviewTick]=useState(0)
 
   const publicUrl = useMemo(()=> id ? `${window.location.origin}/p/${id}` : '', [id])
 
@@ -59,7 +60,67 @@ export default function Editor(){
 
   if(loading) return <div className='chimp-shell'><div className='card' style={{maxWidth:720}}>Lade…</div></div>
 
+  
+
+function ThemeEditor({ components, onChange }){
+  const theme = useMemo(()=>{
+    const t = (components||[]).find(c=>c?.type==='theme')?.data || {}
+    return {
+      bg: t.bg ?? '#f5f7fb',
+      maxWidth: t.maxWidth ?? 980,
+      cardBg: t.cardBg ?? '#ffffff',
+      cardBorder: t.cardBorder ?? '#e6eaf2',
+      titleHidden: !!t.titleHidden,
+    }
+  },[components])
+
+  const set = (patch)=> onChange({ ...theme, ...patch })
+
   return (
+    <div className="grid" style={{gap:12}}>
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}}>
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Hintergrundfarbe</span>
+          <input className="input" type="text" value={theme.bg} onChange={e=>set({bg:e.target.value})} placeholder="#f5f7fb" />
+        </label>
+
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Max. Breite (Desktop)</span>
+          <select className="input" value={theme.maxWidth} onChange={e=>set({maxWidth:Number(e.target.value)})}>
+            <option value={720}>720px</option>
+            <option value={900}>900px</option>
+            <option value={980}>980px</option>
+            <option value={1100}>1100px</option>
+            <option value={9999}>Full</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}}>
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Card Hintergrund</span>
+          <input className="input" type="text" value={theme.cardBg} onChange={e=>set({cardBg:e.target.value})} placeholder="#ffffff" />
+        </label>
+
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Card Rahmenfarbe</span>
+          <input className="input" type="text" value={theme.cardBorder} onChange={e=>set({cardBorder:e.target.value})} placeholder="#e6eaf2" />
+        </label>
+      </div>
+
+      <label style={{display:'flex', gap:10, alignItems:'center'}}>
+        <input type="checkbox" checked={theme.titleHidden} onChange={e=>set({titleHidden:e.target.checked})} />
+        <span style={{color:'#334155',fontWeight:600}}>Titel oben ausblenden (kein „Landing Page“ / keine Überschrift)</span>
+      </label>
+
+      <div className="muted" style={{fontSize:12}}>
+        Tipp: Farben als HEX (#RRGGBB) eintragen. Änderungen wirken sofort in der Live-Vorschau.
+      </div>
+    </div>
+  )
+}
+
+return (
     <div className='chimp-shell'>
       <div className='chimp-top'>
         <div className='chimp-steps'>
@@ -110,17 +171,27 @@ export default function Editor(){
           )}
 
           {step===2 && (
-            <div className='card'>
-              <h3>Design / Einstellungen</h3>
-              <div className='muted'>Basis‑Version: Farben/Fonts/Buttons folgen dem App‑Theme. (Wenn du willst, baue ich dir hier Chimp‑Style Themes, Header‑Bild, Card‑Background Toggles, etc.)</div>
-              <div style={{display:'flex',justifyContent:'space-between',marginTop:16}}>
-                <button className='button ghost' onClick={()=>setStep(1)}>← Zurück</button>
-                <button className='button' onClick={()=>setStep(3)}>Nächster →</button>
-              </div>
-            </div>
-          )}
+        <div className="card" style={{padding:14}}>
+          <div className="h2" style={{marginBottom:8}}>Design / Einstellungen</div>
+          <div className="muted" style={{marginBottom:12}}>Diese Einstellungen gelten für die öffentliche Landing-Page.</div>
 
-          {step===3 && (
+          {/* Theme editor stored as a special component: { type: 'theme', data: {...} } */}
+          <ThemeEditor
+            components={components}
+            onChange={(nextTheme)=>{
+              setComponents(prev=>{
+                const other = (prev||[]).filter(c=>c?.type!=='theme')
+                return [{ type:'theme', data: nextTheme }, ...other]
+              })
+              setPreviewTick(t=>t+1)
+            }}
+          />
+
+          <div style={{marginTop:12, display:'flex', justifyContent:'flex-end'}}>
+            <button className="btn" onClick={()=>setStep(1)}>← Zurück</button>
+          </div>
+        </div>
+      )}{step===3 && (
             <div className='card'>
               <h3>QR Code</h3>
               <div className='muted'>Dieser QR führt auf deine Landingpage.</div>
@@ -148,7 +219,7 @@ export default function Editor(){
             <div className='muted' style={{fontSize:12}}>Live‑Vorschau</div>
           </div>
           <div className='chimp-phone'>
-            <iframe title='preview' src={publicUrl} />
+            <iframe title='preview' src={`${publicUrl}${publicUrl.includes('?') ? '&' : '?'}t=${previewTick}`} />
           </div>
         </div>
       </div>

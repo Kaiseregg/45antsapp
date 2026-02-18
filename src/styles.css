@@ -99,3 +99,21 @@ body { color: var(--text); }
   cursor:pointer;
 }
 .tab:hover{ border-color:#cbd5e1 }
+
+
+/* Public landing page layout */
+.publicWrap{
+  min-height:100vh;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  padding:18px;
+  box-sizing:border-box;
+}
+.publicContainer{
+  width:100%;
+  max-width:980px;
+}
+@media (max-width: 640px){
+  .publicWrap{ padding:10px; }
+}
