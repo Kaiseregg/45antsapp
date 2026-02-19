@@ -56,6 +56,7 @@ export default function Editor(){
     setSaving(true); setErr('')
     const { error } = await supabase.from('landingpages_45ants').update({ name, components }).eq('id', id)
     if(error) setErr(error.message)
+    setPreviewTick(Date.now())
     setSaving(false)
   }
 
@@ -67,7 +68,7 @@ function ThemeEditor({ components, onChange }){
   const theme = useMemo(()=>{
     const t = (components||[]).find(c=>c?.type==='theme')?.data || {}
     return {
-      bg: t.bg ?? '#f5f7fb',
+      backgroundColor: t.backgroundColor ?? t.bg ?? '#f5f7fb',
       maxWidth: t.maxWidth ?? 980,
       cardBg: t.cardBg ?? '#ffffff',
       cardBorder: t.cardBorder ?? '#e6eaf2',
@@ -79,6 +80,11 @@ function ThemeEditor({ components, onChange }){
       headingColor: t.headingColor ?? '#0b1220',
       linkColor: t.linkColor ?? '#2563eb',
       headingAlign: t.headingAlign ?? 'left',
+      backgroundMode: t.backgroundMode ?? 'cover',
+      cardOpacity: (t.cardOpacity ?? 1),
+      headingSize: t.headingSize ?? 32,
+      textSize: t.textSize ?? 16,
+      linkSize: t.linkSize ?? 16,
     }
   },[components])
 
@@ -89,7 +95,10 @@ function ThemeEditor({ components, onChange }){
       <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}}>
         <label style={{display:'grid',gap:6}}>
           <span style={{color:'#334155',fontWeight:600}}>Hintergrundfarbe</span>
-          <input className="input" type="text" value={theme.bg} onChange={e=>set({bg:e.target.value})} placeholder="#f5f7fb" />
+          <div className="row">
+            <input className="input" style={{width:56,padding:0}} type="color" value={theme.backgroundColor} onChange={e=>set({backgroundColor:e.target.value})} />
+            <input className="input" type="text" value={theme.backgroundColor} onChange={e=>set({backgroundColor:e.target.value})} placeholder="#f5f7fb" />
+          </div>
         </label>
 
         <label style={{display:'grid',gap:6}}>
@@ -107,12 +116,22 @@ function ThemeEditor({ components, onChange }){
       <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}}>
         <label style={{display:'grid',gap:6}}>
           <span style={{color:'#334155',fontWeight:600}}>Card Hintergrund</span>
-          <input className="input" type="text" value={theme.cardBg} onChange={e=>set({cardBg:e.target.value})} placeholder="#ffffff" />
+          <div className="row">
+            <input className="input" style={{width:56,padding:0}} type="color" value={theme.cardBg} onChange={e=>set({cardBg:e.target.value})} />
+            <input className="input" type="text" value={theme.cardBg} onChange={e=>set({cardBg:e.target.value})} placeholder="#ffffff" />
+          </div>
+          <div style={{marginTop:8}}>
+            <span style={{color:'#334155',fontWeight:600}}>Card Transparenz: {Math.round((theme.cardOpacity??1)*100)}%</span>
+            <input className="input" type="range" min="0.2" max="1" step="0.05" value={theme.cardOpacity??1} onChange={e=>set({cardOpacity:Number(e.target.value)})} />
+          </div>
         </label>
 
         <label style={{display:'grid',gap:6}}>
           <span style={{color:'#334155',fontWeight:600}}>Card Rahmenfarbe</span>
-          <input className="input" type="text" value={theme.cardBorder} onChange={e=>set({cardBorder:e.target.value})} placeholder="#e6eaf2" />
+          <div className="row">
+            <input className="input" style={{width:56,padding:0}} type="color" value={theme.cardBorder} onChange={e=>set({cardBorder:e.target.value})} />
+            <input className="input" type="text" value={theme.cardBorder} onChange={e=>set({cardBorder:e.target.value})} placeholder="#e6eaf2" />
+          </div>
         </label>
       </div>
 
@@ -152,6 +171,10 @@ function ThemeEditor({ components, onChange }){
         </select>
         <span className="muted" style={{fontSize:12}}>Custom‑Fonts können wir als nächstes als Upload‑Feature ergänzen (wegen Lizenz/Grösse sauber lösen).</span>
       </label>
+
+        <label style={{display:'grid',gap:6}}><span style={{color:'#334155',fontWeight:600}}>Überschrift-Grösse (px)</span><input className="input" type="number" min="18" max="60" value={theme.headingSize} onChange={e=>set({headingSize:Number(e.target.value)||32})} /></label>
+        <label style={{display:'grid',gap:6}}><span style={{color:'#334155',fontWeight:600}}>Text-Grösse (px)</span><input className="input" type="number" min="12" max="28" value={theme.textSize} onChange={e=>set({textSize:Number(e.target.value)||16})} /></label>
+        <label style={{display:'grid',gap:6}}><span style={{color:'#334155',fontWeight:600}}>Link-Grösse (px)</span><input className="input" type="number" min="12" max="28" value={theme.linkSize} onChange={e=>set({linkSize:Number(e.target.value)||16})} /></label>
 
       <div style={{display:'grid',gap:8}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>

@@ -235,7 +235,7 @@ export default function PublicPage(){
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
           <div className="stack" style={{fontSize:theme.linkSize}}>
             {items.map((it,i)=>(
-              <a key={i} className="btn" href={it.url} target="_blank" rel="noreferrer" onClick={()=>trackClick(it.url)} style={{color: theme.linkColor, fontWeight:900}}>{it.label}</a>
+              <a key={i} className="btn" href={it.url} target="_blank" rel="noreferrer" onClick={()=>trackClick(it.url)} style={{color: theme.linkColor, fontSize: theme.linkSize || theme.textSize || 16, fontWeight:900}}>{it.label}</a>
             ))}
           </div>
         </div>

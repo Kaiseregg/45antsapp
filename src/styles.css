@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600;700&family=Oswald:wght@400;600;700&display=swap');
 
 :root{ --bg:#f8fafc; --text:#0f172a; --muted:#475569; --primary:#2563eb; --card:#fff; --border:#e2e8f0 }
 *{ box-sizing:border-box }
@@ -117,3 +118,5 @@ body { color: var(--text); }
 @media (max-width: 640px){
   .publicWrap{ padding:10px; }
 }
+
+.row{display:flex;gap:8px;align-items:center;}
