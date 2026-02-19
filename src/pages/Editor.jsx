@@ -168,13 +168,22 @@ function ThemeEditor({ components, onChange }){
         )}
       </div>
 
+      <label style={{display:'grid',gap:6}}
+        >
+        <span className="muted">Hintergrund-Modus</span>
+        <select className="input" value={theme.backgroundMode} onChange={e=>set({backgroundMode:e.target.value})}>
+          <option value="cover">Cover (Bild füllt Fläche)</option>
+          <option value="repeat">Repeat (Muster wiederholen)</option>
+        </select>
+      </label>
+
       <label style={{display:'flex', gap:10, alignItems:'center'}}>
         <input type="checkbox" checked={theme.titleHidden} onChange={e=>set({titleHidden:e.target.checked})} />
         <span style={{color:'#334155',fontWeight:600}}>Titel oben ausblenden (kein „Landing Page“ / keine Überschrift)</span>
       </label>
 
       <div className="muted" style={{fontSize:12}}>
-        Tipp: Farben als HEX (#RRGGBB) eintragen. Änderungen wirken sofort in der Live-Vorschau.
+        Tipp: Farben mit Picker wählen oder HEX (#RRGGBB) eintragen. Änderungen wirken sofort in der Live-Vorschau.
       </div>
     </div>
   )

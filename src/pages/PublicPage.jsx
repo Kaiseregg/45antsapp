@@ -109,7 +109,7 @@ export default function PublicPage(){
       const text = c.data?.text || ''
       return (
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
-          <div style={{whiteSpace:'pre-wrap'}}>{text}</div>
+          <div style={{whiteSpace:'pre-wrap',fontSize:theme.textSize}}>{text}</div>
         </div>
       )
     }
@@ -121,7 +121,7 @@ export default function PublicPage(){
       if(urls.length===0) return null
       return (
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
-          <div className="stack">
+          <div className="stack" style={{fontSize:theme.linkSize}}>
             {urls.map((u,i)=>(
               <a className="btn" key={u+i} href={u} target="_blank" rel="noreferrer" onClick={()=>trackClick(u)}>
                 <div style={{display:'flex',flexDirection:'column',gap:2,alignItems:'flex-start'}}>
@@ -185,23 +185,38 @@ export default function PublicPage(){
       return (
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
           <div style={{fontWeight:900, marginBottom:6, color: theme.headingColor}}>Info</div>
-          <div style={{whiteSpace:'pre-wrap'}}>{text}</div>
+          <div style={{whiteSpace:'pre-wrap',fontSize:theme.textSize}}>{text}</div>
         </div>
       )
     }
 
     if(c.type==='images'){
-      const urls = (c.data?.urls||'').split(',').map(s=>s.trim()).filter(Boolean)
-      if(urls.length===0) return null
+      const items = Array.isArray(c.data?.items)
+        ? c.data.items
+        : (c.data?.urls||'')
+            .split(',')
+            .map(s=>s.trim())
+            .filter(Boolean)
+            .map(src=>({src, href:''}))
+
+      if(items.length===0) return null
       const cols = Math.max(1, Math.min(4, Number(c.data?.cols||2)))
       const title = (c.data?.title||'').trim()
       return (
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
           {title ? <div style={{fontWeight:900, marginBottom:10, color: theme.headingColor}}>{title}</div> : null}
           <div style={{display:'grid', gridTemplateColumns:`repeat(${cols}, 1fr)`, gap:12}}>
-            {urls.map((u,i)=> (
-              <a key={u+i} href={u} target="_blank" rel="noreferrer" onClick={()=>trackClick(u)} style={{display:'block'}}>
-                <img src={u} alt="" style={{width:'100%',height:'auto',borderRadius:12,display:'block'}} />
+            {items.map((it,i)=> (
+              <a
+                key={(it.src||'')+i}
+                href={it.href || it.src}
+                target="_blank"
+                rel="noreferrer"
+                onClick={()=>trackClick(it.href || it.src)}
+                style={{display:'block'}}
+                title={it.href ? 'Link öffnen' : 'Bild öffnen'}
+              >
+                <img src={it.src} alt="" style={{width:'100%',height:'auto',borderRadius:12,display:'block'}} />
               </a>
             ))}
           </div>
@@ -218,7 +233,7 @@ export default function PublicPage(){
       if(items.length===0) return null
       return (
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
-          <div className="stack">
+          <div className="stack" style={{fontSize:theme.linkSize}}>
             {items.map((it,i)=>(
               <a key={i} className="btn" href={it.url} target="_blank" rel="noreferrer" onClick={()=>trackClick(it.url)} style={{color: theme.linkColor, fontWeight:900}}>{it.label}</a>
             ))}
