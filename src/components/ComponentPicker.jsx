@@ -1,24 +1,19 @@
 import { useState } from 'react'
 
+// Clean/curated list: only components that are implemented and useful.
+// We keep the UI professional and avoid “dead” components.
 const GROUPS = [
   { title: 'Basics', items: [
-    { key:'heading', label:'Überschrift + Text' },
+    { key:'heading', label:'Überschrift' },
     { key:'text', label:'Text' },
-    { key:'button', label:'Taste' },
     { key:'links', label:'Links' },
-    { key:'details', label:'Andere Details' },
+    { key:'testimonial', label:'Hinweis / Info' },
   ]},
   { title: 'Media', items: [
     { key:'image', label:'Bild' },
-    { key:'images', label:'Bilder' },
-    { key:'video', label:'Video' },
+    { key:'images', label:'Bilder‑Galerie' },
+    { key:'video', label:'Video (YouTube)' },
     { key:'pdfgallery', label:'PDF‑Galerie' },
-  ]},
-  { title: 'Business', items: [
-    { key:'hours', label:'Geschäftszeiten' },
-    { key:'team', label:'Team' },
-    { key:'testimonial', label:'Zeugnis' },
-    { key:'products', label:'Produkte' },
   ]},
 ]
 

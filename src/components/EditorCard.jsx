@@ -59,11 +59,29 @@ export default function EditorCard({ component, onChange, onMoveUp, onMoveDown, 
             </div>
           </div>
         )}
-        {type==='images' && tf('Bild-URLs (Komma getrennt)','urls')}
+        {type==='images' && (
+          <div className='grid' style={{gap:10}}>
+            {tf('Titel (optional)','title')}
+            {tf('Bild-URLs (Komma getrennt)','urls')}
+            <UploadZone accept='image/*' onUrl={url=>appendUrl('urls', url)} />
+            <div className='grid' style={{gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <label style={{display:'grid',gap:6}}>
+                <span style={{color:'#334155',fontWeight:600}}>Spalten</span>
+                <select className='input' value={data.cols ?? 2} onChange={e=>onChange({ ...data, cols: Number(e.target.value||2) })}>
+                  {[1,2,3,4].map(n=>(<option key={n} value={n}>{n}</option>))}
+                </select>
+              </label>
+              <div style={{display:'grid',gap:6,alignContent:'end'}}>
+                <div style={{color:'#334155',fontSize:12}}>Klick auf Bild öffnet es in neuem Tab.</div>
+              </div>
+            </div>
+          </div>
+        )}
         {type==='links' && tf('Links (Text|URL, Komma)','links')}
         {type==='button' && (<><label>Label<input className='input' value={data.label||''} onChange={e=>onChange({...data,label:e.target.value})} /></label>{tf('URL','url')}</>)}
         {type==='video' && (
           <div className='grid' style={{gap:10}}>
+            {tf('Titel (optional)','title')}
             {tf('YouTube / Video URL (Embed)','url')}
             <div className='grid' style={{gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
               <label style={{display:'grid',gap:6}}>
@@ -98,7 +116,7 @@ export default function EditorCard({ component, onChange, onMoveUp, onMoveDown, 
               </label>
             </div>
             <div style={{color:'#334155',fontSize:12}}>
-              Hinweis: Für YouTube am besten den <b>Embed-Link</b> benutzen (…/embed/VIDEO_ID). Normale watch-Links werden je nach Browser blockiert.
+              Hinweis: Watch-Links werden automatisch in einen Embed-Link umgewandelt (youtube‑nocookie).
             </div>
           </div>
         )}
@@ -111,7 +129,12 @@ export default function EditorCard({ component, onChange, onMoveUp, onMoveDown, 
             <div style={{color:'#334155',fontSize:12}}>Tipp: PDFs werden in deinen Supabase‑Bucket hochgeladen und hier automatisch ergänzt.</div>
           </div>
         )}
-        {['details','hours','team','testimonial','products'].includes(type) && tf('Freitext','text')}
+        {type==='testimonial' && tf('Freitext','text')}
+        {['details','hours','team','products','button'].includes(type) && (
+          <div className='muted' style={{fontSize:12}}>
+            Diese Komponente ist in v1.0.8 nicht mehr im Picker (Alt-Daten bleiben aber bestehen).
+          </div>
+        )}
       </div>
     </div>
   )

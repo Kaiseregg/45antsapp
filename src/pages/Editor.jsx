@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import ComponentPicker from '../components/ComponentPicker'
 import EditorCard from '../components/EditorCard'
 import QRPreview from '../components/QRPreview'
+import UploadZone from '../components/UploadZone'
 
 export default function Editor(){
   const nav = useNavigate()
@@ -16,7 +17,7 @@ export default function Editor(){
   const [saving,setSaving]=useState(false)
   const [loading,setLoading]=useState(true)
   const [err,setErr]=useState('')
-  const [previewTick,setPreviewTick]=useState(0)
+  const [previewTick,setPreviewTick]=useState(Date.now())
 
   const publicUrl = useMemo(()=> id ? `${window.location.origin}/p/${id}` : '', [id])
 
@@ -71,6 +72,13 @@ function ThemeEditor({ components, onChange }){
       cardBg: t.cardBg ?? '#ffffff',
       cardBorder: t.cardBorder ?? '#e6eaf2',
       titleHidden: !!t.titleHidden,
+      // v1.0.8
+      backgroundImageUrl: t.backgroundImageUrl ?? '',
+      fontFamily: t.fontFamily ?? 'system',
+      textColor: t.textColor ?? '#0f172a',
+      headingColor: t.headingColor ?? '#0b1220',
+      linkColor: t.linkColor ?? '#2563eb',
+      headingAlign: t.headingAlign ?? 'left',
     }
   },[components])
 
@@ -106,6 +114,58 @@ function ThemeEditor({ components, onChange }){
           <span style={{color:'#334155',fontWeight:600}}>Card Rahmenfarbe</span>
           <input className="input" type="text" value={theme.cardBorder} onChange={e=>set({cardBorder:e.target.value})} placeholder="#e6eaf2" />
         </label>
+      </div>
+
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}}>
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Textfarbe</span>
+          <input className="input" type="text" value={theme.textColor} onChange={e=>set({textColor:e.target.value})} placeholder="#0f172a" />
+        </label>
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Link‑Farbe</span>
+          <input className="input" type="text" value={theme.linkColor} onChange={e=>set({linkColor:e.target.value})} placeholder="#2563eb" />
+        </label>
+      </div>
+
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}}>
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Überschrift‑Farbe</span>
+          <input className="input" type="text" value={theme.headingColor} onChange={e=>set({headingColor:e.target.value})} placeholder="#0b1220" />
+        </label>
+        <label style={{display:'grid',gap:6}}>
+          <span style={{color:'#334155',fontWeight:600}}>Überschrift Ausrichtung</span>
+          <select className="input" value={theme.headingAlign} onChange={e=>set({headingAlign:e.target.value})}>
+            <option value="left">Links</option>
+            <option value="center">Zentriert</option>
+            <option value="right">Rechts</option>
+          </select>
+        </label>
+      </div>
+
+      <label style={{display:'grid',gap:6}}>
+        <span style={{color:'#334155',fontWeight:600}}>Schriftart</span>
+        <select className="input" value={theme.fontFamily} onChange={e=>set({fontFamily:e.target.value})}>
+          <option value="system">System (empfohlen)</option>
+          <option value="arial">Arial</option>
+          <option value="helvetica">Helvetica</option>
+          <option value="roboto">Roboto (wenn verfügbar)</option>
+        </select>
+        <span className="muted" style={{fontSize:12}}>Custom‑Fonts können wir als nächstes als Upload‑Feature ergänzen (wegen Lizenz/Grösse sauber lösen).</span>
+      </label>
+
+      <div style={{display:'grid',gap:8}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+          <span style={{color:'#334155',fontWeight:600}}>Hintergrund‑Bild (optional)</span>
+          {theme.backgroundImageUrl ? (
+            <button type="button" className="button ghost" onClick={()=>set({backgroundImageUrl:''})}>Entfernen</button>
+          ) : null}
+        </div>
+        <UploadZone bucket="45ants_documents" folder="branding" accept="image/*" onUploaded={(url)=>set({backgroundImageUrl:url})} />
+        {theme.backgroundImageUrl ? (
+          <div className="muted" style={{fontSize:12,wordBreak:'break-all'}}>{theme.backgroundImageUrl}</div>
+        ) : (
+          <div className="muted" style={{fontSize:12}}>Kein Hintergrundbild gesetzt.</div>
+        )}
       </div>
 
       <label style={{display:'flex', gap:10, alignItems:'center'}}>
@@ -183,7 +243,8 @@ return (
                 const other = (prev||[]).filter(c=>c?.type!=='theme')
                 return [{ type:'theme', data: nextTheme }, ...other]
               })
-              setPreviewTick(t=>t+1)
+              // cache-bust the iframe reliably
+              setPreviewTick(Date.now())
             }}
           />
 

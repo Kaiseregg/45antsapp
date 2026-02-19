@@ -10,6 +10,13 @@ function getTheme(components){
     cardBg: t.cardBg ?? '#ffffff',
     cardBorder: t.cardBorder ?? '#e6eaf2',
     titleHidden: !!t.titleHidden,
+    // v1.0.8
+    backgroundImageUrl: t.backgroundImageUrl ?? '',
+    fontFamily: t.fontFamily ?? 'system',
+    textColor: t.textColor ?? '#0f172a',
+    headingColor: t.headingColor ?? '#0b1220',
+    linkColor: t.linkColor ?? '#2563eb',
+    headingAlign: t.headingAlign ?? 'left',
   }
 }
 
@@ -36,8 +43,47 @@ export default function PublicPage(){
     return ()=>{ alive=false }
   },[id])
 
+  // Track a "scan" (= page opened via QR) once per load.
+  useEffect(()=>{
+    if(!page?.id) return
+    ;(async()=>{
+      try{
+        await supabase.from('analytics_45ants').insert({
+          page_id: page.id,
+          event_type: 'scan',
+          target: window.location.pathname,
+          referrer: document.referrer || null,
+        })
+      }catch(e){
+        // analytics should never break the page
+      }
+    })()
+  }, [page?.id])
+
+  const trackClick = async (target) => {
+    try{
+      await supabase.from('analytics_45ants').insert({
+        page_id: page.id,
+        event_type: 'click',
+        target: String(target||''),
+        referrer: document.referrer || null,
+      })
+    }catch(e){
+      // ignore
+    }
+  }
+
   const components = page?.components || []
   const theme = useMemo(()=>getTheme(components), [components])
+
+  const fontStack = useMemo(()=>{
+    switch(theme.fontFamily){
+      case 'arial': return 'Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
+      case 'helvetica': return 'Helvetica, Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
+      case 'roboto': return 'Roboto, system-ui, -apple-system, Segoe UI, Arial, sans-serif'
+      default: return 'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif'
+    }
+  }, [theme.fontFamily])
 
   useEffect(()=>{
     const t = page?.name || '45Ants'
@@ -53,7 +99,7 @@ export default function PublicPage(){
       const subtitle = c.data?.subtitle || ''
       return (
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
-          {!theme.titleHidden && title && <h2 className="h2">{title}</h2>}
+          {title && <h2 className="h2" style={{color: theme.headingColor, textAlign: theme.headingAlign}}>{title}</h2>}
           {subtitle && <div className="muted">{subtitle}</div>}
         </div>
       )
@@ -77,9 +123,9 @@ export default function PublicPage(){
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
           <div className="stack">
             {urls.map((u,i)=>(
-              <a className="btn" key={u+i} href={u} target="_blank" rel="noreferrer">
+              <a className="btn" key={u+i} href={u} target="_blank" rel="noreferrer" onClick={()=>trackClick(u)}>
                 <div style={{display:'flex',flexDirection:'column',gap:2,alignItems:'flex-start'}}>
-                  <div>{titles[i] || `PDF ${i+1}`}</div>
+                  <div style={{fontWeight:900, color: theme.linkColor}}>{titles[i] || `PDF ${i+1}`}</div>
                   {subs[i] ? <div style={{fontSize:12,opacity:.85}}>{subs[i]}</div> : null}
                 </div>
               </a>
@@ -110,6 +156,7 @@ export default function PublicPage(){
     if(c.type==='video'){
       const url = c.data?.url || ''
       if(!url) return null
+      const embed = toYouTubeEmbed(url)
       const widthPct = Number(c.data?.widthPct ?? 100)
       const align = c.data?.align || 'center'
       const height = Number(c.data?.height ?? 420)
@@ -119,7 +166,7 @@ export default function PublicPage(){
             <div style={{width:`${Math.max(30, Math.min(100, widthPct))}%`}}>
               <div style={{position:'relative', paddingTop:'56.25%'}}>
                 <iframe
-                  src={url}
+                  src={embed}
                   title="video"
                   style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', border:0, borderRadius:12, maxHeight: height}}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -127,6 +174,36 @@ export default function PublicPage(){
                 />
               </div>
             </div>
+          </div>
+        </div>
+      )
+    }
+
+    if(c.type==='testimonial'){
+      const text = c.data?.text || ''
+      if(!text) return null
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          <div style={{fontWeight:900, marginBottom:6, color: theme.headingColor}}>Info</div>
+          <div style={{whiteSpace:'pre-wrap'}}>{text}</div>
+        </div>
+      )
+    }
+
+    if(c.type==='images'){
+      const urls = (c.data?.urls||'').split(',').map(s=>s.trim()).filter(Boolean)
+      if(urls.length===0) return null
+      const cols = Math.max(1, Math.min(4, Number(c.data?.cols||2)))
+      const title = (c.data?.title||'').trim()
+      return (
+        <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
+          {title ? <div style={{fontWeight:900, marginBottom:10, color: theme.headingColor}}>{title}</div> : null}
+          <div style={{display:'grid', gridTemplateColumns:`repeat(${cols}, 1fr)`, gap:12}}>
+            {urls.map((u,i)=> (
+              <a key={u+i} href={u} target="_blank" rel="noreferrer" onClick={()=>trackClick(u)} style={{display:'block'}}>
+                <img src={u} alt="" style={{width:'100%',height:'auto',borderRadius:12,display:'block'}} />
+              </a>
+            ))}
           </div>
         </div>
       )
@@ -143,7 +220,7 @@ export default function PublicPage(){
         <div className="card" key={idx} style={{background:theme.cardBg,borderColor:theme.cardBorder}}>
           <div className="stack">
             {items.map((it,i)=>(
-              <a key={i} className="btn" href={it.url} target="_blank" rel="noreferrer">{it.label}</a>
+              <a key={i} className="btn" href={it.url} target="_blank" rel="noreferrer" onClick={()=>trackClick(it.url)} style={{color: theme.linkColor, fontWeight:900}}>{it.label}</a>
             ))}
           </div>
         </div>
@@ -155,18 +232,26 @@ export default function PublicPage(){
   }
 
   if(loading){
-    return <div className="publicWrap" style={{background:theme.bg}}><div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}><div className="muted">Lädt…</div></div></div>
+    return <div className="publicWrap" style={{backgroundColor:theme.bg, fontFamily:fontStack, color:theme.textColor}}><div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}><div className="muted">Lädt…</div></div></div>
   }
 
   if(!page){
-    return <div className="publicWrap" style={{background:theme.bg}}><div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}><div className="muted">Nicht gefunden.</div></div></div>
+    return <div className="publicWrap" style={{backgroundColor:theme.bg, fontFamily:fontStack, color:theme.textColor}}><div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}><div className="muted">Nicht gefunden.</div></div></div>
   }
 
   // If someone appends ?admin=1 we still never show admin UI on public pages
   void sp
 
   return (
-    <div className="publicWrap" style={{background:theme.bg}}>
+    <div className="publicWrap" style={{
+      backgroundColor:theme.bg,
+      backgroundImage: theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : undefined,
+      backgroundSize:'cover',
+      backgroundPosition:'center',
+      backgroundRepeat:'no-repeat',
+      fontFamily:fontStack,
+      color:theme.textColor,
+    }}>
       <div className="publicContainer" style={{maxWidth: theme.maxWidth===9999 ? "none" : theme.maxWidth}}>
         <div className="grid">
           {components.map(render)}
@@ -174,4 +259,22 @@ export default function PublicPage(){
       </div>
     </div>
   )
+}
+
+function toYouTubeEmbed(url){
+  try{
+    if(url.includes('youtube.com/embed/')) return url
+    const u = new URL(url)
+    if(u.hostname.includes('youtu.be')){
+      const id = u.pathname.replace('/','').trim()
+      return `https://www.youtube-nocookie.com/embed/${id}`
+    }
+    if(u.hostname.includes('youtube.com')){
+      const id = u.searchParams.get('v')
+      if(id) return `https://www.youtube-nocookie.com/embed/${id}`
+    }
+  } catch(e){
+    // ignore
+  }
+  return url
 }
